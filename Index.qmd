@@ -1,0 +1,63 @@
+---
+title: "R_Malaria_example"
+format: html
+editor: visual
+---
+
+#Adding libraries
+
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+```
+
+```{r}
+if (!file.exists("data/malaria_routine_data.csv")) {
+  if (file.exists("07_github/generate_malaria_example.R")) {
+    source("07_github/generate_malaria_example.R")
+  } else if (file.exists("generate_malaria_example.R")) {
+    source("generate_malaria_example.R")
+  }
+}
+
+case_data <- read_csv("data/malaria_routine_data.csv")
+
+case_summary <- case_data %>%
+  mutate(positivity = positive_tests / tests_done) %>%
+  group_by(district) %>%
+  summarise(
+    total_cases = sum(suspected_cases),
+    mean_positivity = mean(positivity)
+  ) %>%
+  arrange(desc(total_cases))
+
+case_summary
+```
+
+```{r}
+ggplot(case_data, aes(month, suspected_cases, color = district)) +
+  geom_line(linewidth = 1) +
+  geom_point() +
+  labs(
+    title = "Suspected malaria cases by district",
+    x = "Month",
+    y = "Suspected cases"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+interactive_plot <- ggplot(case_data, aes(month, suspected_cases, color = district)) +
+  geom_line(linewidth = 1) +
+  geom_point() +
+  labs(
+    title = "Suspected malaria cases by district (interactive)",
+    x = "Month",
+    y = "Suspected cases"
+  ) +
+  theme_minimal()
+
+plotly::ggplotly(interactive_plot)
+```

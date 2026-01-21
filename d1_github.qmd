@@ -1,0 +1,389 @@
+---
+title: "GitHub, R, and Quarto"
+author: "Benson Mwelwa & Justin Millar"
+format: html
+editor: visual
+---
+
+```{=html}
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const frames = document.querySelectorAll("iframe.slide-deck[data-pptx]");
+    frames.forEach((frame) => {
+      const fileUrl = new URL(frame.dataset.pptx, window.location.href).href;
+      const embedUrl = "https://view.officeapps.live.com/op/embed.aspx?src=" + encodeURIComponent(fileUrl);
+      frame.src = embedUrl;
+      frame.style.border = "0";
+    });
+  });
+</script>
+```
+
+```{=html}
+<iframe class="slide-deck" data-pptx="material/github-file-compilation/Day 1/DF_Retreat_Github.pptx" width="780" height="500"></iframe>
+```
+
+# Introduction
+
+Version control is one of the most important skills for anyone working in data science, reproducible research, or collaborative analytics.\
+If you have experience with **R** but are **new to Git or GitHub**, this guide will walk you through the essential concepts and help you get hands-on practice.
+
+This document expands on the Data Fellow Hackathon slide deck and provides:
+
+-   Clear explanations of *why* version control matters\
+-   Step-by-step instructions for essential GitHub workflows\
+-   Practical R examples\
+-   Exercises you can use to build confidence\
+-   Quarto integration examples for building documents and websites
+
+# Why Version Control?
+
+Most R users begin by saving files like:
+
+-   `script.R`
+-   `script_v2.R`
+-   `script_final.R`
+-   `script_final_really_final.R`
+
+This quickly becomes unmanageable, especially when collaborating.\
+Version control solves these problems by giving you:
+
+✔ A complete history of your project\
+✔ The ability to revert mistakes\
+✔ Safe collaboration without overwriting each other\
+✔ Automatic documentation of your work\
+✔ Easy publishing and sharing
+
+[Git](https://git-scm.com/) is the tool that tracks file changes.\
+[GitHub](https://github.com/) is the website that stores your Git-tracked files and enables collaboration.
+
+# Before You Begin: Install and Verify Setup
+
+Install or confirm Git on your computer:\
+<https://git-scm.com/downloads>
+
+In **RStudio**, run:
+
+``` r
+usethis::git_sitrep()
+```
+
+This report shows:
+
+-   Whether Git is installed\
+-   Whether RStudio can find Git\
+-   Whether GitHub authentication is configured
+
+If something is missing, `git_sitrep()` should provide instructions how to fix it. It is important to resolve any issues before proceeding, as they may cause problems later and will be more challenging to troubleshoot.
+
+### Practice Exercise
+
+1.  Install Git if needed\
+2.  Run `git_sitrep()`\
+3.  Identify anything you need to fix\
+4.  Save the output into a markdown file as part of your learning notes
+
+# Connecting RStudio to GitHub
+
+Authenticate GitHub from R:
+
+``` r
+usethis::gh_token_help()
+```
+
+This helps you create and store a secure GitHub token. Follow the instructions carefully, and be mindful of the scopes you select and how long the token is valid (if not indefinite then you will need to update these steps again when it expires).
+
+Confirm stored credentials:
+
+``` r
+gitcreds::gitcreds_get()
+```
+
+### Tip
+
+Your Git username and email should match your GitHub account:
+
+``` r
+usethis::use_git_config(
+  user.name = "Your Name",
+  user.email = "your_email@example.com"
+)
+```
+
+# Creating a New R Project with Git
+
+Using Git is easiest when you start with a clean RStudio project.
+
+### Steps
+
+1.  **File → New Project → New Directory → New Project**
+2.  Give your project a name\
+3.  ✨ **Check the box: “Create a git repository”**\
+4.  Click **Create Project**
+
+Your project now contains a hidden `.git` folder where Git tracks changes.
+
+# Recommended Project Structure
+
+Create folders to organize your work:
+
+``` r
+fs::dir_create(c("data", "scripts", "outputs", "local"))
+```
+
+A simple structure:
+
+```         
+project/
+  ├── data/         # raw data files
+  ├── scripts/      # R scripts
+  ├── outputs/      # cleaned data, figures, models
+  ├── local/        # private or sensitive files (ignored)
+  ├── README.md
+  └── index.qmd     # Quarto document
+```
+
+### Why this structure helps
+
+-   Makes collaboration easier\
+-   Prevents accidental uploads of sensitive data\
+-   Ensures reproducibility
+
+# Mini-case dataset (malaria routine data)
+
+We will use a small example dataset for practice. The CSV is generated
+ahead of time by a script in this folder so we can focus on Git and
+Quarto rather than data simulation.
+
+Script: `07_github/generate_malaria_example.R`\
+Data: `07_github/malaria_routine_data.csv`
+
+Load the data in R:
+
+``` r
+library(readr)
+
+malaria_data <- read_csv("malaria_routine_data.csv")
+malaria_data
+```
+
+Quick analysis example:
+
+``` r
+library(dplyr)
+library(ggplot2)
+
+malaria_summary <- malaria_data %>%
+  mutate(positivity = positive_tests / tests_done) %>%
+  group_by(district) %>%
+  summarise(
+    total_cases = sum(suspected_cases),
+    mean_positivity = mean(positivity)
+  ) %>%
+  arrange(desc(total_cases))
+
+malaria_summary
+```
+
+``` r
+ggplot(malaria_data, aes(month, suspected_cases, color = district)) +
+  geom_line(linewidth = 1) +
+  geom_point() +
+  labs(
+    title = "Suspected malaria cases by district",
+    x = "Month",
+    y = "Suspected cases"
+  ) +
+  theme_minimal()
+```
+
+# Understanding `.gitignore`
+
+Git tracks everything in your project—unless you tell it not to.
+
+A `.gitignore` file prevents tracking of:
+
+-   Temporary files (`.Rhistory`, `.RData`)\
+-   Large datasets\
+-   Credentials\
+-   Local working files
+
+Here we specifically create a `local/` folder to store files we don't want to share. This is where you want to put and data that is sensitive or private. Also, very large data files that would bloat your GitHub repository should go here. We also ignore common R temporary files using the `*` wildcard (see [regular expressions](https://en.wikipedia.org/wiki/Regular_expression) for more complex patterns).
+
+### Example `.gitignore`
+
+```         
+.Rhistory
+.RData
+/local/
+*.docx
+*.tmp
+```
+
+### Exercise
+
+Create a `.gitignore` file and add at least three patterns you want Git to ignore.
+
+# Making Your First Commit
+
+A **commit** is a snapshot of your project at a moment in time.
+
+In RStudio:
+
+1.  Open the **Git** tab\
+2.  Check the files you want to include\
+3.  Click **Commit**\
+4.  Write a meaningful message
+    -   Good: `"Add project structure and initial scripts"`\
+    -   Bad: `"stuff"`
+
+### Suggested practice
+
+Modify a script, then commit with a descriptive message.\
+Repeat this three times to observe your history.
+
+# Creating a Remote Repository on GitHub
+
+Once your project has at least one commit, publish it on GitHub.
+
+``` r
+usethis::use_github(private = TRUE, organisation = "PATH-Global-Health")
+```
+
+This:
+
+-   Creates a GitHub repository\
+-   Pushes your local files to the cloud\
+-   Opens the GitHub webpage for your repo
+
+Note that in this example we create a private repository within the PATH-Global-Health organization. You can also create public repositories or create them under your personal GitHub account by omitting the `organisation` argument. You must have permission to create repositories in the specified organization, if you do not have access to PATH-Global-Health then this code will not work for you.
+
+Also, note that there are some restrictions on creating private repositories for free GitHub accounts, including the ability to use Github Pages to render web documents.
+
+### Exercise
+
+Create a R project and follow the steps above to push your project to Github.
+
+# Using GitHub Issues
+
+GitHub Issues are a lightweight way to track tasks, bugs, and feature requests.
+
+**GitHub Issues** help teams track:
+
+-   Tasks\
+-   Bugs\
+-   Requested features\
+-   Discussion threads
+
+Each issue can contain:
+
+-   Labels\
+-   Assignments\
+-   Linked commits\
+-   Checklists
+
+### Example issue template
+
+```         
+**Task:** Create basic data exploration script
+
+**Steps**
+- [ ] Load dataset
+- [ ] Clean variables
+- [ ] Create initial plots
+
+**Assigned to:** @username
+```
+
+# Introduction to Quarto
+
+Quarto allows you to blend **R code**, **results**, and **narrative text** into beautiful documents, dashboards, and websites.
+
+Create a new document:
+
+1.  File → New File → Quarto Document\
+2.  Select HTML format\
+3.  Save as **index.qmd** (important for GitHub Pages)
+
+### Minimal YAML
+
+The YAML header at the top of your Quarto document controls its settings. The YAML can get complex, but here is a minimal example to get you started:
+
+``` yaml
+
+title: "My First Quarto Document"
+format: html
+editor: visual
+```
+
+# Embedding a Shiny App
+
+You can embed interactive content inside Quarto. This is a create way to share Shiny apps hosted on shinyapps.io (or other platforms).
+
+``` html
+<iframe 
+  src="https://shinyapps.io/your-app"
+  width="100%" 
+  height="600px"
+  frameborder="0">
+</iframe>
+```
+
+# Publishing with GitHub Pages
+
+GitHub Pages converts your repo into a static website.
+
+Enable it:
+
+``` r
+usethis::use_github_pages()
+```
+
+Build locally:
+
+``` bash
+quarto preview
+```
+
+Publish:
+
+``` bash
+quarto publish gh-pages
+```
+
+Your site appears at:
+
+```         
+https://username.github.io/repository-name/
+```
+
+If `index.qmd` exists, it becomes the homepage.
+
+# Putting It All Together: A Beginner Workflow
+
+1.  Create an RStudio project\
+2.  Initialize Git\
+3.  Add folders and files\
+4.  Commit your work\
+5.  Push to GitHub\
+6.  Build a README\
+7.  Create Issues\
+8.  Build and publish a Quarto webpage
+
+# Additional Learning Resources
+
+-   **Happy Git with R** — <https://happygitwithr.com/>\
+-   **Quarto documentation** — <https://quarto.org>\
+-   **GitHub Pages guide** — <https://quarto.org/docs/publishing/github-pages.html>\
+-   **Git cheat sheet** — <https://git-scm.com/docs>
+
+# Final Practice Challenge
+
+1.  Create a new R project\
+2.  Initialize Git\
+3.  Add a `.gitignore` file\
+4.  Make several commits\
+5.  Push the project to GitHub\
+6.  Add a README and Issues\
+7.  Create a Quarto `index.qmd`\
+8.  Publish using GitHub Pages
