@@ -51,3 +51,12 @@ getwd()
 library(readr)
 case_data <- read_csv("data/malaria_routine_data.csv")
 
+#Publish quatro document, after creating codes in quatro (Index.qmd)
+usethis::use_github_pages()
+
+#Preview the quatro document create using the command below in terminal
+#quarto preview Index.qmd
+
+#Publish quatro document
+quarto publish
+
