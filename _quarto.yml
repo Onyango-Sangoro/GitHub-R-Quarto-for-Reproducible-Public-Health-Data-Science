@@ -1,0 +1,16 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "GitHub, R & Quarto for Reproducible Public Health Data Science"
+  navbar:
+    left:
+      - href: Index.qmd
+        text: Home
+      - href: d1_github.qmd
+        text: GitHub notes
+
+format:
+  html:
+    toc: true
